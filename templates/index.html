@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-exchange-alt me-2"></i>
+                    Конвертер форматов данных
+                </h4>
+            </div>
+            <div class="card-body">
+                <form id="convertForm" enctype="multipart/form-data">
+                    <div class="row">
+                        <!-- Выбор исходного формата -->
+                        <div class="col-md-6 mb-3">
+                            <label for="sourceFormat" class="form-label">
+                                <i class="fas fa-upload me-1"></i>Исходный формат
+                            </label>
+                            <select class="form-select" id="sourceFormat" name="source_format">
+                                <option value="auto">Автоопределение</option>
+                                {% for format in formats %}
+                                <option value="{{ format }}">{{ format.upper() }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Выбор целевого формата -->
+                        <div class="col-md-6 mb-3">
+                            <label for="targetFormat" class="form-label">
+                                <i class="fas fa-download me-1"></i>Целевой формат
+                            </label>
+                            <select class="form-select" id="targetFormat" name="target_format" required>
+                                <option value="">Выберите формат...</option>
+                                {% for format in formats %}
+                                <option value="{{ format }}">{{ format.upper() }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Вкладки для ввода данных -->
+                    <ul class="nav nav-tabs mb-3" id="inputTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="file-tab" data-bs-toggle="tab" data-bs-target="#file-pane" type="button">
+                                <i class="fas fa-file-upload me-1"></i>Загрузить файл
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-pane" type="button">
+                                <i class="fas fa-keyboard me-1"></i>Ввести текст
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content mb-3" id="inputTabsContent">
+                        <!-- Загрузка файла -->
+                        <div class="tab-pane fade show active" id="file-pane">
+                            <div class="drop-zone" id="dropZone">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <p class="mb-2">Перетащите файл сюда или нажмите для выбора</p>
+                                <p class="text-muted small">Максимальный размер: 10MB</p>
+                                <input type="file" id="fileInput" name="file" class="d-none" accept=".json,.xml,.csv,.yaml,.yml,.toml,.txt">
+                                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
+                                    <i class="fas fa-folder-open me-1"></i>Выбрать файл
+                                </button>
+                            </div>
+                            <div id="fileInfo" class="mt-3" style="display: none;">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-file me-1"></i>
+                                    <span id="fileName"></span>
+                                    <span class="badge bg-secondary ms-2" id="fileSize"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ввод текста -->
+                        <div class="tab-pane fade" id="text-pane">
+                            <textarea class="form-control" id="textInput" name="text_data" rows="10" 
+                                      placeholder="Вставьте или введите ваши данные здесь..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Кнопки управления -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-outline-secondary me-md-2" id="validateBtn">
+                            <i class="fas fa-check-circle me-1"></i>Валидировать
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-exchange-alt me-1"></i>Конвертировать
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Результат конвертации -->
+<div class="row mt-4" id="resultSection" style="display: none;">
+    <div class="col-lg-12">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Результат конвертации
+                </h5>
+                <div>
+                    <button class="btn btn-light btn-sm me-2" id="copyBtn">
+                        <i class="fas fa-copy me-1"></i>Копировать
+                    </button>
+                    <button class="btn btn-light btn-sm" id="downloadBtn">
+                        <i class="fas fa-download me-1"></i>Скачать
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="badge bg-primary" id="conversionInfo"></span>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="wrapText">
+                            <label class="form-check-label" for="wrapText">Перенос строк</label>
+                        </div>
+                        <small class="text-muted">💡 Результат отображается ниже</small>
+                    </div>
+                </div>
+                <pre id="resultContent" class="bg-light p-3 rounded"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Индикатор загрузки -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+                <p class="mb-0">Конвертация данных...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDropZone();
+    initializeForm();
+    initializeResultHandlers();
+});
+</script>
+{% endblock %}
