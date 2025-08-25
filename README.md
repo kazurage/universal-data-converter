@@ -23,7 +23,7 @@
 
 1. **Клонируйте репозиторий**:
 ```bash
-git clone <repository-url>
+git clone https://github.com/kazurage/universal-data-converter
 cd universal-data-converter
 ```
 
